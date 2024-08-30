@@ -1,70 +1,83 @@
-# Getting Started with Create React App
+'''Setting up the Project'''
+Here we set up the project, dockerize it and run it locally to make sure everything works as expected.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+'''Basic Node.js project'''
+Create a basic node project by npm init
 
-## Available Scripts
+'''Containerizing the project'''
+To containerize the project, we would make use of Docker. First, we create a Dockerfile for the application.
 
-In the project directory, you can run:
+In the root folder, create a file named Dockerfile and add the following content within it:
+please reeference Dockerfile present in the repo.
 
-### `npm start`
+'''Create a Github Repo and Add Secrets'''
+Goto repo settings > secret and variables > actions > new repository secret
+Add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+'''Push your code to the Repo'''
+git init
+git remote add origin https://your-git-repo.git
+git add -A
+git commit -m "FC"
+git push -u -f origin master
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+'''Login to the AWS Console and Create an ECR repository'''
+Search ECR
+Click on create repository and under general settings tab give repo name and click on create with default settings
 
-### `npm test`
+'''Push and Build code'''
+Refer to the push_and_build.yml file in .gituhb/workflows directory present in the repo.
+it will automatically trigger when any chanage detected in the master branch and push the image to the AWS ECR.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+'''Provisioning an EKS Cluster'''
+We make use of the eksctl CLI to create the cluster in EKS, eksctl which is a simple command-line tool for creating and managing Kubernetes clusters on Amazon EKS.
 
-### `npm run build`
+eksctl version
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+eksctl create cluster --name node-app-cluster --region ap-south-1
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+aws eks update-kubeconfig --name node-app-cluster --region ap-south-1
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+'''Deploying to EKS Cluster'''
+To deploy the application, create a Deployment.yml file containing the deployment details. The deployment creates a Pod, where the application runs in a single container using the Docker image.
 
-### `npm run eject`
+----------------------------------------------------------------------------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: node-app
+  template:
+    metadata:
+      labels:
+        app: node-app
+    spec:
+      containers:
+      - name: node-app
+        image: 058264231631.dkr.ecr.ap-south-1.amazonaws.com/deploy_to_eks:latest
+        ports:
+          - containerPort: 80
+----------------------------------------------------------------------------------------------------------------------------------------------
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Replace the image “058264231631.dkr.ecr.ap-south-1.amazonaws.com/deploy_to_eks:latest” with your ECR URI
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Next, apply the deployment to create it:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+kubectl apply -f Deployment.yml
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+To verify if it works, run the command below:
 
-## Learn More
+kubectl get deployments
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+kubectl expose deployment node-app --port=80 --target-port=80 --type=LoadBalancer
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+To verify if it works, run the command below:
 
-### Code Splitting
+kubectl get services
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+'''Testing'''
+Finally, to confirm everything works as expected, copy the exposed EXTERNAL-IP address shown in the previous command and visit a browser.
