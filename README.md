@@ -39,30 +39,8 @@ eksctl create cluster --name node-app-cluster --region ap-south-1
 aws eks update-kubeconfig --name node-app-cluster --region ap-south-1
 
 ### `Deploying to EKS Cluster`
-To deploy the application, create a Deployment.yml file containing the deployment details. The deployment creates a Pod, where the application runs in a single container using the Docker image.
+To deploy the application, create a Deployment.yml file (present in the repo) containing the deployment details. The deployment creates a Pod, where the application runs in a single container using the Docker image.
 
-----------------------------------------------------------------------------------------------------------------------------------------------
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: node-app
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: node-app
-  template:
-    metadata:
-      labels:
-        app: node-app
-    spec:
-      containers:
-      - name: node-app
-        image: 058264231631.dkr.ecr.ap-south-1.amazonaws.com/deploy_to_eks:latest
-        ports:
-          - containerPort: 80
-
-----------------------------------------------------------------------------------------------------------------------------------------------
 Replace the image “058264231631.dkr.ecr.ap-south-1.amazonaws.com/deploy_to_eks:latest” with your ECR URI
 
 Next, apply the deployment to create it:
