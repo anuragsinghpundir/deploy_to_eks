@@ -43,9 +43,13 @@ To deploy the application, create a Deployment.yml file containing the deploymen
 
 ----------------------------------------------------------------------------------------------------------------------------------------------
 apiVersion: apps/v1
+
 kind: Deployment
+
 metadata:
+
   name: node-app
+
 spec:
   replicas: 2
   selector:
